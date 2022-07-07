@@ -18,6 +18,7 @@ LIGHT_SPEED = 299792458
 
 def cal_distance_batch():
     # 打开文件，检测是否包含需要的列
+    print("[INFO] 读取并处理输入文件")
     input_df = pd.read_csv(INPUT_FILE, encoding='utf8')
     columns = input_df.columns
     for col in REQUIRE_COL_LIST:
@@ -33,11 +34,12 @@ def cal_distance_batch():
     input_df[REQUIRE_COL_LIST[1]] = input_df[REQUIRE_COL_LIST[1]].astype(float) * 180 / PI
     input_df[REQUIRE_COL_LIST[2]] = input_df[REQUIRE_COL_LIST[2]].astype(float) * 180 / PI
 
-    print(input_df)
-    print(input_df.info())
+    # print(input_df)
+    # print(input_df.info())
 
     output_df = None
     # 计算任意两个站点之间的距离
+    print("[INFO] 计算任意点之间的距离")
     for idx_from, row_from in input_df.iterrows():
         for idx_to, row_to in input_df.iterrows():
             if idx_from == idx_to:
@@ -62,9 +64,11 @@ def cal_distance_batch():
                 output_df = pd.concat([output_df, df])
 
     # 输出结果文件
+    print("[INFO] 输出结果文件到 " + OUTPUT_FILE)
     if output_df is not None:
         output_df.to_csv(OUTPUT_FILE, index=False)
 
 
 if __name__ == '__main__':
     cal_distance_batch()
+    input()
