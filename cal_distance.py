@@ -2,10 +2,12 @@
 # Date: 2022/05/01
 # mail:geniusrabbit@qq.com
 # 打包代码 pyinstaller -F -c cal_distance.py
+import re
 import pandas as pd
 from geopy import distance
 
 INPUT_FILE = 'stationinfo.csv'
+INPUT_NEW_FILE = 'stationinfo_new.csv'
 OUTPUT_FILE = 'host_tdf_distance.csv'
 
 HOST_ID = 'hostid'
@@ -31,9 +33,22 @@ def cal_distance_batch():
         print("[WARN] 列 " + HOST_ID + " 不存在, 设置默认值1")
         input_df[HOST_ID] = "1"
 
-    input_df[REQUIRE_COL_LIST[1]] = input_df[REQUIRE_COL_LIST[1]].astype(float) * 180 / PI
-    input_df[REQUIRE_COL_LIST[2]] = input_df[REQUIRE_COL_LIST[2]].astype(float) * 180 / PI
-
+    input_df[REQUIRE_COL_LIST[1]] = input_df[REQUIRE_COL_LIST[1]].astype(str).apply(
+        lambda x: round(
+            (float(re.split("度|分|秒", x)[0])
+             + float(re.split("度|分|秒", x)[1]) / 60
+             + float(re.split("度|分|秒", x)[2]) / 3600)
+            , 9
+        )
+    )
+    input_df[REQUIRE_COL_LIST[2]] = input_df[REQUIRE_COL_LIST[2]].astype(str).apply(
+        lambda x: round(
+            (float(re.split("度|分|秒", x)[0])
+             + float(re.split("度|分|秒", x)[1]) / 60
+             + float(re.split("度|分|秒", x)[2]) / 3600)
+            , 9
+        )
+    )
     # print(input_df)
     # print(input_df.info())
 
@@ -46,18 +61,18 @@ def cal_distance_batch():
                 continue
             # 计算距离和时间
             t_distance = distance.distance(
-                    (row_from[REQUIRE_COL_LIST[2]], row_from[REQUIRE_COL_LIST[1]]),
-                    (row_to[REQUIRE_COL_LIST[2]], row_to[REQUIRE_COL_LIST[1]])
-                ).kilometers
+                (row_from[REQUIRE_COL_LIST[2]], row_from[REQUIRE_COL_LIST[1]]),
+                (row_to[REQUIRE_COL_LIST[2]], row_to[REQUIRE_COL_LIST[1]])
+            ).kilometers
             df = pd.DataFrame(
-                    [[
-                        row_from[HOST_ID] + '-' + row_from[REQUIRE_COL_LIST[0]],
-                        row_to[HOST_ID] + '-'  + row_to[REQUIRE_COL_LIST[0]],
-                        t_distance,
-                        t_distance * 1000 / LIGHT_SPEED
-                    ]],
-                    columns=OUTPUT_LIST
-                )
+                [[
+                    row_from[HOST_ID] + '-' + row_from[REQUIRE_COL_LIST[0]],
+                    row_to[HOST_ID] + '-' + row_to[REQUIRE_COL_LIST[0]],
+                    t_distance,
+                    t_distance * 1000 / LIGHT_SPEED
+                ]],
+                columns=OUTPUT_LIST
+            )
             if output_df is None:
                 output_df = df
             else:
@@ -68,7 +83,14 @@ def cal_distance_batch():
     if output_df is not None:
         output_df.to_csv(OUTPUT_FILE, index=False)
 
+    # 输入文件经纬度转换
+    print("[INFO] 输入文件经纬度转换到文件 " + INPUT_NEW_FILE)
+    input_df.drop(HOST_ID, axis=1, inplace=True)
+    input_df[REQUIRE_COL_LIST[1]] = input_df[REQUIRE_COL_LIST[1]] * PI / 180
+    input_df[REQUIRE_COL_LIST[2]] = input_df[REQUIRE_COL_LIST[2]] * PI / 180
+    input_df.to_csv(INPUT_NEW_FILE, index=False)
+
 
 if __name__ == '__main__':
     cal_distance_batch()
-    input()
+    # input()
